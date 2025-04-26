@@ -116,49 +116,88 @@ namespace cli_life
                 }
             }
         }
-    }
-    class Program
-    {
-        static Board board;
-        static Settings settings;
-        static private void Reset()
-        {
-            settings = Settings.Load("setting.json");
 
-            board = new Board(
-                width: settings.Width,
-                height: settings.Height,
-                cellSize: settings.CellSize,
-                liveDensity: settings.LiveDensity);
-        }
-        static void Render()
+        public void Save(string filePath)
         {
-            for (int row = 0; row < board.Rows; row++)
+            using (StreamWriter writer = new StreamWriter(filePath))
             {
-                for (int col = 0; col < board.Columns; col++)   
+                for (int y = 0; y < Rows; y++)
                 {
-                    var cell = board.Cells[col, row];
-                    if (cell.IsAlive)
+                    for (int x = 0; x < Columns; x++)
                     {
-                        Console.Write('*');
+                        if (Cells[x, y].IsAlive)
+                        {
+                            writer.Write('1');
+                        }
+                        else
+                        {
+                            writer.Write('0');
+                        }
+
+
                     }
-                    else
-                    {
-                        Console.Write(' ');
-                    }
+
+                    writer.WriteLine();
                 }
-                Console.Write('\n');
             }
         }
-        static void Main(string[] args)
+        class Program
         {
-            Reset();
-            while(true)
+            static Board board;
+            static Settings settings;
+            static private void Reset()
             {
-                Console.Clear();
-                Render();
-                board.Advance();
-                Thread.Sleep(1000);
+                settings = Settings.Load("setting.json");
+
+                board = new Board(
+                    width: settings.Width,
+                    height: settings.Height,
+                    cellSize: settings.CellSize,
+                    liveDensity: settings.LiveDensity);
+            }
+            static void Render()
+            {
+                for (int row = 0; row < board.Rows; row++)
+                {
+                    for (int col = 0; col < board.Columns; col++)
+                    {
+                        var cell = board.Cells[col, row];
+                        if (cell.IsAlive)
+                        {
+                            Console.Write('*');
+                        }
+                        else
+                        {
+                            Console.Write(' ');
+                        }
+                    }
+                    Console.Write('\n');
+                }
+            }
+
+
+            static void Main(string[] args)
+            {
+                Reset();
+                while (true)
+                {
+                    Console.Clear();
+                    Render();
+                    board.Advance();
+                    Thread.Sleep(1000);
+
+                    if (Console.KeyAvailable)
+                    {
+                        var key = Console.ReadKey(true);
+                        if (key.Key == ConsoleKey.S)
+                        {
+                            Console.Write("Введите имя файла для сохранения: ");
+                            string filename = Console.ReadLine();
+                            board.Save(filename);
+                            Console.WriteLine("Игра сохранена!");
+                        }
+                    }
+                }
             }
         }
     }
