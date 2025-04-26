@@ -4,9 +4,40 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Text.Json;
+using System.IO;
 
 namespace cli_life
 {
+
+    public class Settings
+    {
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int CellSize { get; set; }
+        public double LiveDensity { get; set; }
+
+        public static Settings Load(string path)
+        {
+            if (!File.Exists(path))
+            {
+                // Создадим файл с настройками по умолчанию
+                var defaultSettings = new Settings
+                {
+                    Width = 50,
+                    Height = 20,
+                    CellSize = 1,
+                    LiveDensity = 0.5
+                };
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                File.WriteAllText(path, JsonSerializer.Serialize(defaultSettings, options));
+                return defaultSettings;
+            }
+
+            string json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<Settings>(json);
+        }
+    }
     public class Cell
     {
         public bool IsAlive;
@@ -89,13 +120,16 @@ namespace cli_life
     class Program
     {
         static Board board;
+        static Settings settings;
         static private void Reset()
         {
+            settings = Settings.Load("setting.json");
+
             board = new Board(
-                width: 50,
-                height: 20,
-                cellSize: 1,
-                liveDensity: 0.5);
+                width: settings.Width,
+                height: settings.Height,
+                cellSize: settings.CellSize,
+                liveDensity: settings.LiveDensity);
         }
         static void Render()
         {
