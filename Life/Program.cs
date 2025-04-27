@@ -141,6 +141,8 @@ namespace cli_life
                 }
             }
         }
+
+
         class Program
         {
             static Board board;
@@ -175,6 +177,50 @@ namespace cli_life
                 }
             }
 
+            static private void LoadPattern()
+            {
+                Console.Write("Путь до файла: ");
+                string filename = Console.ReadLine();
+                string path = filename;
+
+                if (!File.Exists(path))
+                {
+                    Console.WriteLine("Файл не найден.");
+                    return;
+                }
+
+                settings = Settings.Load("settings.json");
+                board = new Board(
+                    width: settings.Width,
+                    height: settings.Height,
+                    cellSize: settings.CellSize,
+                    liveDensity: 0
+                );
+
+                var lines = File.ReadAllLines(path);
+
+                int offsetX = (board.Columns - lines.Max(l => l.Length)) / 2;
+                int offsetY = (board.Rows - lines.Length) / 2;
+
+                for (int y = 0; y < lines.Length; y++)
+                {
+                    string line = lines[y];
+                    for (int x = 0; x < line.Length; x++)
+                    {
+                        if (line[x] == '*')
+                        {
+                            int posX = offsetX + x;
+                            int posY = offsetY + y;
+
+                            if (posX >= 0 && posX < board.Columns && posY >= 0 && posY < board.Rows)
+                            {
+                                board.Cells[posX, posY].IsAlive = true;
+                            }
+                        }
+                    }
+                }
+            }
+
 
             static void Main(string[] args)
             {
@@ -195,6 +241,10 @@ namespace cli_life
                             string filename = Console.ReadLine();
                             board.Save(filename);
                             Console.WriteLine("Игра сохранена!");
+                        }
+                        if (key.Key == ConsoleKey.L)
+                        {
+                            LoadPattern();
                         }
                     }
                 }
