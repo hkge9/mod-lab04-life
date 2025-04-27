@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Text.Json;
 using System.IO;
+using Life;
 
 namespace cli_life
 {
@@ -74,7 +75,7 @@ namespace cli_life
             for (int x = 0; x < Columns; x++)
                 for (int y = 0; y < Rows; y++)
                     Cells[x, y] = new Cell();
-
+            figures = new FigureLoader().LoadFigures();
             ConnectNeighbors();
             Randomize(liveDensity);
         }
@@ -117,6 +118,7 @@ namespace cli_life
             }
         }
 
+
         public void Save(string filePath)
         {
             using (StreamWriter writer = new StreamWriter(filePath))
@@ -141,175 +143,232 @@ namespace cli_life
                 }
             }
         }
+        private Dictionary<string, bool[,]> figures; // Словарь всех фигур
 
 
-        class Program
+        public string ClassifyFigure(int x, int y)
         {
-            static Board board;
-            static Settings settings;
-            static private void Reset()
-            {
-                settings = Settings.Load("setting.json");
+            // Проверяем, является ли клетка живой
+            if (!Cells[x, y].IsAlive)
+                return "Unknown";
 
-                board = new Board(
-                    width: settings.Width,
-                    height: settings.Height,
-                    cellSize: settings.CellSize,
-                    liveDensity: settings.LiveDensity);
-            }
-            static void Render()
+            // Для каждой фигуры проверяем на соответствие
+            foreach (var figure in figures)
             {
-                for (int row = 0; row < board.Rows; row++)
+                if (IsFigureMatch(x, y, figure.Value))
                 {
-                    for (int col = 0; col < board.Columns; col++)
-                    {
-                        var cell = board.Cells[col, row];
-                        if (cell.IsAlive)
-                        {
-                            Console.Write('*');
-                        }
-                        else
-                        {
-                            Console.Write(' ');
-                        }
-                    }
-                    Console.Write('\n');
+                    return figure.Key; // Возвращаем название фигуры
                 }
             }
 
-            static private void LoadPattern()
+            return "Unknown"; // Если не совпадает ни с одной фигурой
+        }
+
+        private bool IsFigureMatch(int x, int y, bool[,] figure)
+        {
+            int figureWidth = figure.GetLength(0);
+            int figureHeight = figure.GetLength(1);
+
+            // Проверяем, что фигура помещается в пределах доски
+            if (x + figureWidth > Columns || y + figureHeight > Rows)
+                return false;
+
+            // Сравниваем клетки доски с шаблоном фигуры
+            for (int fx = 0; fx < figureWidth; fx++)
             {
-                Console.Write("Путь до файла: ");
-                string filename = Console.ReadLine();
-                string path = filename;
-
-                if (!File.Exists(path))
+                for (int fy = 0; fy < figureHeight; fy++)
                 {
-                    Console.WriteLine("Файл не найден.");
-                    return;
-                }
-
-                settings = Settings.Load("settings.json");
-                board = new Board(
-                    width: settings.Width,
-                    height: settings.Height,
-                    cellSize: settings.CellSize,
-                    liveDensity: 0
-                );
-
-                var lines = File.ReadAllLines(path);
-
-                int offsetX = (board.Columns - lines.Max(l => l.Length)) / 2;
-                int offsetY = (board.Rows - lines.Length) / 2;
-
-                for (int y = 0; y < lines.Length; y++)
-                {
-                    string line = lines[y];
-                    for (int x = 0; x < line.Length; x++)
+                    if (figure[fx, fy] != Cells[x + fx, y + fy].IsAlive)
                     {
-                        if (line[x] == '*')
-                        {
-                            int posX = offsetX + x;
-                            int posY = offsetY + y;
-
-                            if (posX >= 0 && posX < board.Columns && posY >= 0 && posY < board.Rows)
-                            {
-                                board.Cells[posX, posY].IsAlive = true;
-                            }
-                        }
+                        return false;
                     }
                 }
             }
 
-            static void CountElementsAndClusters()
-            {
-                bool[,] visited = new bool[board.Columns, board.Rows];
-                int liveCells = 0;
-                int clusters = 0;
+            return true; // Фигура совпала
+        }
+    }
 
+
+    class Program
+    {
+        static Board board;
+        static Settings settings;
+        static private void Reset()
+        {
+            settings = Settings.Load("setting.json");
+
+            board = new Board(
+                width: settings.Width,
+                height: settings.Height,
+                cellSize: settings.CellSize,
+                liveDensity: settings.LiveDensity);
+        }
+        static void Render()
+        {
+            for (int row = 0; row < board.Rows; row++)
+            {
+                for (int col = 0; col < board.Columns; col++)
+                {
+                    var cell = board.Cells[col, row];
+                    if (cell.IsAlive)
+                    {
+                        Console.Write('*');
+                    }
+                    else
+                    {
+                        Console.Write(' ');
+                    }
+                }
+                Console.Write('\n');
+            }
+        }
+
+        static private void LoadPattern()
+        {
+            Console.Write("Путь до файла: ");
+            string filename = Console.ReadLine();
+            string path = filename;
+
+            if (!File.Exists(path))
+            {
+                Console.WriteLine("Файл не найден.");
+                return;
+            }
+
+            settings = Settings.Load("settings.json");
+            board = new Board(
+                width: settings.Width,
+                height: settings.Height,
+                cellSize: settings.CellSize,
+                liveDensity: 0
+            );
+
+            var lines = File.ReadAllLines(path);
+
+            int offsetX = (board.Columns - lines.Max(l => l.Length)) / 2;
+            int offsetY = (board.Rows - lines.Length) / 2;
+
+            for (int y = 0; y < lines.Length; y++)
+            {
+                string line = lines[y];
+                for (int x = 0; x < line.Length; x++)
+                {
+                    if (line[x] == '*')
+                    {
+                        int posX = offsetX + x;
+                        int posY = offsetY + y;
+
+                        if (posX >= 0 && posX < board.Columns && posY >= 0 && posY < board.Rows)
+                        {
+                            board.Cells[posX, posY].IsAlive = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        static void CountElementsAndClusters()
+        {
+            bool[,] visited = new bool[board.Columns, board.Rows];
+            int liveCells = 0;
+            int clusters = 0;
+
+            for (int x = 0; x < board.Columns; x++)
+            {
+                for (int y = 0; y < board.Rows; y++)
+                {
+                    if (board.Cells[x, y].IsAlive)
+                    {
+                        liveCells++;
+                        if (!visited[x, y])
+                        {
+                            ExploreCluster(x, y, visited);
+                            clusters++;
+                        }
+                    }
+                }
+            }
+
+            Console.WriteLine($"Живых клеток: {liveCells}");
+            Console.WriteLine($"Комбинаций (кластеров): {clusters}");
+        }
+
+        static void ExploreCluster(int startX, int startY, bool[,] visited)
+        {
+            Stack<(int x, int y)> stack = new Stack<(int x, int y)>();
+            stack.Push((startX, startY));
+            visited[startX, startY] = true;
+
+            int[] dx = { -1, 0, 1, -1, 1, -1, 0, 1 };
+            int[] dy = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+            while (stack.Count > 0)
+            {
+                var (x, y) = stack.Pop();
+
+                for (int dir = 0; dir < 8; dir++)
+                {
+                    int nx = x + dx[dir];
+                    int ny = y + dy[dir];
+
+                    if (nx >= 0 && nx < board.Columns && ny >= 0 && ny < board.Rows)
+                    {
+                        if (board.Cells[nx, ny].IsAlive && !visited[nx, ny])
+                        {
+                            visited[nx, ny] = true;
+                            stack.Push((nx, ny));
+                        }
+                    }
+                }
+            }
+        }
+
+        static void Main(string[] args)
+        {
+            Reset();
+            while (true)
+            {
+                Console.Clear();
+                Render();
                 for (int x = 0; x < board.Columns; x++)
                 {
                     for (int y = 0; y < board.Rows; y++)
                     {
                         if (board.Cells[x, y].IsAlive)
                         {
-                            liveCells++;
-                            if (!visited[x, y])
+                            string figureName = board.ClassifyFigure(x, y);
+                            if (figureName != "Unknown")
                             {
-                                ExploreCluster(x, y, visited);
-                                clusters++;
+                                Console.WriteLine($"Фигура {figureName} обнаружена на позиции ({x}, {y})");
                             }
                         }
                     }
                 }
+                board.Advance();
+                Thread.Sleep(1000);
 
-                Console.WriteLine($"Живых клеток: {liveCells}");
-                Console.WriteLine($"Комбинаций (кластеров): {clusters}");
-            }
-
-            static void ExploreCluster(int startX, int startY, bool[,] visited)
-            {
-                Stack<(int x, int y)> stack = new Stack<(int x, int y)>();
-                stack.Push((startX, startY));
-                visited[startX, startY] = true;
-
-                int[] dx = { -1, 0, 1, -1, 1, -1, 0, 1 };
-                int[] dy = { -1, -1, -1, 0, 0, 1, 1, 1 };
-
-                while (stack.Count > 0)
+                if (Console.KeyAvailable)
                 {
-                    var (x, y) = stack.Pop();
-
-                    for (int dir = 0; dir < 8; dir++)
+                    var key = Console.ReadKey(true);
+                    if (key.Key == ConsoleKey.S)
                     {
-                        int nx = x + dx[dir];
-                        int ny = y + dy[dir];
-
-                        if (nx >= 0 && nx < board.Columns && ny >= 0 && ny < board.Rows)
-                        {
-                            if (board.Cells[nx, ny].IsAlive && !visited[nx, ny])
-                            {
-                                visited[nx, ny] = true;
-                                stack.Push((nx, ny));
-                            }
-                        }
+                        Console.Write("Введите имя файла для сохранения: ");
+                        string filename = Console.ReadLine();
+                        board.Save(filename);
+                        Console.WriteLine("Игра сохранена!");
                     }
-                }
-            }
-
-
-            static void Main(string[] args)
-            {
-                Reset();
-                while (true)
-                {
-                    Console.Clear();
-                    Render();
-                    board.Advance();
-                    Thread.Sleep(1000);
-
-                    if (Console.KeyAvailable)
+                    if (key.Key == ConsoleKey.L)
                     {
-                        var key = Console.ReadKey(true);
-                        if (key.Key == ConsoleKey.S)
-                        {
-                            Console.Write("Введите имя файла для сохранения: ");
-                            string filename = Console.ReadLine();
-                            board.Save(filename);
-                            Console.WriteLine("Игра сохранена!");
-                        }
-                        if (key.Key == ConsoleKey.L)
-                        {
-                            LoadPattern();
-                        }
-                        if (key.Key == ConsoleKey.C)
-                        {
-                            CountElementsAndClusters();
-                            Console.WriteLine("Нажмите любую клавишу для продолжения...");
-                            Console.ReadKey(true);
-                        }
-
+                        LoadPattern();
                     }
+                    if (key.Key == ConsoleKey.C)
+                    {
+                        CountElementsAndClusters();
+                        Console.WriteLine("Нажмите любую клавишу для продолжения...");
+                        Console.ReadKey(true);
+                    }
+
                 }
             }
         }
