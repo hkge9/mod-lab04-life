@@ -360,12 +360,12 @@ namespace cli_life
 
         public static void StudyStableTimes()
         {
-            double[] densities = { 0.1, 0.3, 0.5, 0.7 };
-            int runsPerDensity = 5;
             int width = 50;
             int height = 30;
             int cellSize = 1;
             int stablePeriod = 10;
+            double step = 0.02;
+            int maxGens=1000;
 
             string directoryPath = "Life";
             string filePath = Path.Combine(directoryPath, "data.txt");
@@ -378,16 +378,14 @@ namespace cli_life
             Console.WriteLine($"File path: {filePath}");
             using (var writer = new StreamWriter("Life/data.txt"))
             {
-                foreach (var density in densities)
+                for (double density = 0.0; density <= 1.0 + 1e-9; density += step)
                 {
-                    for (int run = 0; run < runsPerDensity; run++)
-                    {
-                        Board board = new Board(width, height, cellSize, density);
-                        int generations = FindStablePhase(board, 1000, stablePeriod);
-
-                        writer.WriteLine($"{density} {generations}");
-                        Console.WriteLine($"Density {density}, Run {run + 1}: {generations} generations");
-                    }
+                    
+                    var board = new Board(width, height, cellSize, density);
+                    int gens = FindStablePhase(board, maxGens, stablePeriod);
+                    writer.WriteLine($"{density:F2} {gens}");
+                    Console.WriteLine($"Density {density:F2}: {gens}");
+                    
                 }
             }
         }
