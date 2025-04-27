@@ -190,7 +190,7 @@ namespace cli_life
     }
 
 
-    class Program
+   public static class Program
     {
         static Board board;
         static Settings settings;
@@ -324,28 +324,39 @@ namespace cli_life
             }
         }
         public static int FindStablePhase(Board board, int maxGenerations = 1000, int stablePeriod = 10)
+{
+    // Запоминаем состояние поколения 0:
+    int initial = CountAlive(board);
+
+    // Делаем stablePeriod шагов вперед:
+    bool allSame = true;
+    for (int i = 0; i < stablePeriod; i++)
+    {
+        board.Advance();
+        if (CountAlive(board) != initial)
         {
-            int previousAlive = CountAlive(board);
-            Queue<int> history = new Queue<int>();
-            history.Enqueue(previousAlive);
-
-            for (int generation = 1; generation <= maxGenerations; generation++)
-            {
-                board.Advance();
-                int currentAlive = CountAlive(board);
-
-                history.Enqueue(currentAlive);
-                if (history.Count > stablePeriod)
-                    history.Dequeue();
-
-                if (history.All(x => x == history.First()))
-                {
-                    return generation; // Стабильность достигнута
-                }
-            }
-
-            return maxGenerations; // Не достигнута
+            allSame = false;
+            break;
         }
+    }
+
+    if (allSame)
+        return 0;
+
+    var history = new Queue<int>();
+    history.Enqueue(initial);
+    for (int gen = 1; gen <= maxGenerations; gen++)
+    {
+        board.Advance();
+        int curr = CountAlive(board);
+        history.Enqueue(curr);
+        if (history.Count > stablePeriod) history.Dequeue();
+        if (history.All(x => x == history.Peek()))
+            return gen;
+    }
+    return maxGenerations;
+}
+
 
         private static int CountAlive(Board board)
         {
@@ -393,9 +404,13 @@ namespace cli_life
 
 
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
+        {
+            if (args.Length == 0)
         {
             StudyStableTimes();
+            return;
+        }
             
             Reset();
             while (true)
