@@ -323,9 +323,82 @@ namespace cli_life
                 }
             }
         }
+        public static int FindStablePhase(Board board, int maxGenerations = 1000, int stablePeriod = 10)
+        {
+            int previousAlive = CountAlive(board);
+            Queue<int> history = new Queue<int>();
+            history.Enqueue(previousAlive);
+
+            for (int generation = 1; generation <= maxGenerations; generation++)
+            {
+                board.Advance();
+                int currentAlive = CountAlive(board);
+
+                history.Enqueue(currentAlive);
+                if (history.Count > stablePeriod)
+                    history.Dequeue();
+
+                if (history.All(x => x == history.First()))
+                {
+                    return generation; // Стабильность достигнута
+                }
+            }
+
+            return maxGenerations; // Не достигнута
+        }
+
+        private static int CountAlive(Board board)
+        {
+            int count = 0;
+            foreach (var cell in board.Cells)
+            {
+                if (cell.IsAlive)
+                    count++;
+            }
+            return count;
+        }
+
+        public static void StudyStableTimes()
+        {
+            double[] densities = { 0.1, 0.3, 0.5, 0.7 };
+            int runsPerDensity = 5;
+            int width = 50;
+            int height = 30;
+            int cellSize = 1;
+            int stablePeriod = 10;
+
+            string directoryPath = "Life";
+            string filePath = Path.Combine(directoryPath, "data.txt");
+
+            // Создаем директорию, если её нет
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            Console.WriteLine($"File path: {filePath}");
+            using (var writer = new StreamWriter("Life/data.txt"))
+            {
+                foreach (var density in densities)
+                {
+                    for (int run = 0; run < runsPerDensity; run++)
+                    {
+                        Board board = new Board(width, height, cellSize, density);
+                        int generations = FindStablePhase(board, 1000, stablePeriod);
+
+                        writer.WriteLine($"{density} {generations}");
+                        Console.WriteLine($"Density {density}, Run {run + 1}: {generations} generations");
+                    }
+                }
+            }
+        }
+
+
+
 
         static void Main(string[] args)
         {
+            StudyStableTimes();
+            
             Reset();
             while (true)
             {
