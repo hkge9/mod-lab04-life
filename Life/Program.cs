@@ -221,6 +221,62 @@ namespace cli_life
                 }
             }
 
+            static void CountElementsAndClusters()
+            {
+                bool[,] visited = new bool[board.Columns, board.Rows];
+                int liveCells = 0;
+                int clusters = 0;
+
+                for (int x = 0; x < board.Columns; x++)
+                {
+                    for (int y = 0; y < board.Rows; y++)
+                    {
+                        if (board.Cells[x, y].IsAlive)
+                        {
+                            liveCells++;
+                            if (!visited[x, y])
+                            {
+                                ExploreCluster(x, y, visited);
+                                clusters++;
+                            }
+                        }
+                    }
+                }
+
+                Console.WriteLine($"Живых клеток: {liveCells}");
+                Console.WriteLine($"Комбинаций (кластеров): {clusters}");
+            }
+
+            static void ExploreCluster(int startX, int startY, bool[,] visited)
+            {
+                Stack<(int x, int y)> stack = new Stack<(int x, int y)>();
+                stack.Push((startX, startY));
+                visited[startX, startY] = true;
+
+                int[] dx = { -1, 0, 1, -1, 1, -1, 0, 1 };
+                int[] dy = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+                while (stack.Count > 0)
+                {
+                    var (x, y) = stack.Pop();
+
+                    for (int dir = 0; dir < 8; dir++)
+                    {
+                        int nx = x + dx[dir];
+                        int ny = y + dy[dir];
+
+                        if (nx >= 0 && nx < board.Columns && ny >= 0 && ny < board.Rows)
+                        {
+                            if (board.Cells[nx, ny].IsAlive && !visited[nx, ny])
+                            {
+                                visited[nx, ny] = true;
+                                stack.Push((nx, ny));
+                            }
+                        }
+                    }
+                }
+            }
+
 
             static void Main(string[] args)
             {
@@ -246,6 +302,13 @@ namespace cli_life
                         {
                             LoadPattern();
                         }
+                        if (key.Key == ConsoleKey.C)
+                        {
+                            CountElementsAndClusters();
+                            Console.WriteLine("Нажмите любую клавишу для продолжения...");
+                            Console.ReadKey(true);
+                        }
+
                     }
                 }
             }
