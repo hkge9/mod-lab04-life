@@ -9,7 +9,7 @@ namespace Life
 {
     public class FigureLoader
     {
-        private string figuresDirectory = "D:\\Visual Studio Projects\\MIPandS\\lab4_life\\Life\\figures\\"; 
+        private string figuresDirectory = Path.Combine(Directory.GetCurrentDirectory(), "figures");
 
         
         public Dictionary<string, bool[,]> LoadFigures()

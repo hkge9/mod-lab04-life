@@ -116,9 +116,7 @@ namespace LifeTests
         [Fact]
         public void StudyStableTimes_CreatesDataFile_WithCorrectLines()
         {
-            var dir = "Life";
-            var path = Path.Combine(dir, "data.txt");
-            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+            var path = "data.txt";
 
             Program.StudyStableTimes();
 

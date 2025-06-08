@@ -378,16 +378,7 @@ namespace cli_life
             double step = 0.02;
             int maxGens=1000;
 
-            string directoryPath = "Life";
-            string filePath = Path.Combine(directoryPath, "data.txt");
-
-            // Создаем директорию, если её нет
-            if (!Directory.Exists(directoryPath))
-            {
-                Directory.CreateDirectory(directoryPath);
-            }
-            Console.WriteLine($"File path: {filePath}");
-            using (var writer = new StreamWriter("Life/data.txt"))
+            using (var writer = new StreamWriter("data.txt"))
             {
                 for (double density = 0.0; density <= 1.0 + 1e-9; density += step)
                 {
